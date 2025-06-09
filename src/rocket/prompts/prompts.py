@@ -4,22 +4,26 @@ import glob
 
 def load_prompts():
     """
-    Reads all .txt files in the prompts directory and loads them into variables
-    with the same name as the files without the .txt extension.
+    Reads all .txt and .md files in the prompts directory and loads them into variables
+    with the same name as the files without the file extension.
 
     Returns:
-        dict: A dictionary where keys are variable names (filename without .txt)
+        dict: A dictionary where keys are variable names (filename without extension)
               and values are the file contents as strings.
     """
     # Get the directory where this file is located
     prompts_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Find all .txt files in the prompts directory
+    # Find all .txt and .md files in the prompts directory
     txt_files = glob.glob(os.path.join(prompts_dir, "*.txt"))
+    md_files = glob.glob(os.path.join(prompts_dir, "*.md"))
+
+    # Combine both file types
+    all_files = txt_files + md_files
 
     prompts = {}
 
-    for file_path in txt_files:
+    for file_path in all_files:
         # Get the filename without path and extension
         filename = os.path.basename(file_path)
         variable_name = os.path.splitext(filename)[0]
