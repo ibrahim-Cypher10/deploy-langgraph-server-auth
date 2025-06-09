@@ -1,12 +1,13 @@
 from rocket.graph import build_graph, AgentState
 from langchain_core.messages import AIMessageChunk, HumanMessage
 from typing import AsyncGenerator, Any
-from langgraph.graph import StateGraph
+from langgraph.graph.state import CompiledStateGraph
+from colorama import Fore, Style
 
 
 async def stream_graph_responses(
-        input: dict[str, Any],
-        graph: StateGraph,
+        input: AgentState,
+        graph: CompiledStateGraph,
         **kwargs
         ) -> AsyncGenerator[str, None]:
     """Asynchronously stream the result of the graph run.
@@ -24,6 +25,7 @@ async def stream_graph_responses(
         stream_mode="messages",
         **kwargs
         ):
+        tool_call_str = ""
         if isinstance(message_chunk, AIMessageChunk):
             if message_chunk.response_metadata:
                 finish_reason = message_chunk.response_metadata.get("finish_reason", "")
@@ -43,7 +45,10 @@ async def stream_graph_responses(
 
                 yield tool_call_str
             else:
-                yield message_chunk.content
+                if isinstance(message_chunk.content, str):
+                    yield message_chunk.content
+                else:
+                    yield str(message_chunk.content)
             continue
 
 
@@ -64,11 +69,11 @@ async def main():
         )
 
         while True:
-            print(f" ---- 🤖 Assistant ---- \n")
+            print(f"\n ---- 🚀 Rocket ---- \n")
             async for response in stream_graph_responses(graph_input, graph, config=config):
-                print(response, end="", flush=True)
+                print(Fore.CYAN + response + Style.RESET_ALL, end="", flush=True)
 
-            user_input = input("User: ")
+            user_input = input("\n\nUser ('exit' to quit): ")
             if user_input.lower() in ["exit", "quit"]:
                 print("\n\nExit command received. Exiting...\n\n")
                 break
@@ -87,7 +92,5 @@ async def main():
 
 if __name__ == "__main__":
     import asyncio
-    import nest_asyncio
-    nest_asyncio.apply()
 
     asyncio.run(main())

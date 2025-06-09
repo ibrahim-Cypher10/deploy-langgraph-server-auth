@@ -51,10 +51,10 @@ class Comment(BaseModel):
 # ----------------------------
 
 
-mcp = FastMCP("database")
+# mcp = FastMCP("database")
 
 
-@mcp.tool()
+# @mcp.tool()
 async def db_create_video_record(video: Video) -> str:
     """
     Create a video record in the database.
@@ -84,7 +84,7 @@ async def db_create_video_record(video: Video) -> str:
         return str(result.fetchone()[0])
     
 
-@mcp.tool()
+# @mcp.tool()
 async def db_upsert_comments_records(comments: List[Comment]):
     """
     Upsert comment records in the database (insert or update on conflict).

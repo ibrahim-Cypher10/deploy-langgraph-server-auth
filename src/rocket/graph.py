@@ -12,7 +12,7 @@ import json
 # from composio_langchain import ComposioToolSet, App, Action
 from dotenv import load_dotenv
 import os
-from rocket.prompts import rocket_system_prompt
+from rocket.prompts.prompts import rocket_system_prompt
 
 
 load_dotenv()
