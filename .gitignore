@@ -8,3 +8,13 @@ wheels/
 
 # Virtual environments
 .venv
+uv.lock
+
+# macOS
+*.DS_Store
+
+# env
+.env
+
+# langgraph api
+.langgraph_api
