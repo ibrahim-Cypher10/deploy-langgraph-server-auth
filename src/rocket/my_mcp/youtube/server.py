@@ -8,6 +8,17 @@ from dotenv import load_dotenv
 import os
 from rocket.db.server import Video, Comment, db_create_video_record, db_upsert_comments_records
 from typing import List
+from typing import Dict, Any
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Add console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 
 # ----------------------------
@@ -172,6 +183,30 @@ class YouTubeCommentExtractor:
                 print("Video not found. Check the video ID.")
             
             return []
+        
+    def search_videos(self, query: str, max_results: int = 10, **options) -> Dict[str, Any]:
+        """
+        Search for YouTube videos based on query and options
+        """
+        try:
+            search_params = {
+                'part': 'snippet',
+                'q': query,
+                'maxResults': max_results,
+                'type': options.get('type', 'video')
+            }
+            
+            # Add optional parameters if provided
+            for param in ['channelId', 'order', 'videoDuration', 'publishedAfter', 
+                        'publishedBefore', 'videoCaption', 'videoDefinition', 'regionCode']:
+                if param in options and options[param]:
+                    search_params[param] = options[param]
+            
+            response = self.youtube.search().list(**search_params).execute()
+            return response
+        except HttpError as e:
+            logger.error(f"Error searching videos: {e}")
+            raise e
 
     def get_video_info(self, video_url: str) -> Video:
         """
@@ -274,12 +309,40 @@ mcp = FastMCP("Youtube MCP")
 
 
 @mcp.tool()
+async def search_videos(
+    query: str, 
+    max_results: int = 10, 
+    **options
+    ) -> str:
+    """
+    Search for YouTube videos based on query and options.
+
+    Args:
+        query: Search query
+        max_results: Maximum number of results to return (default: 10)
+        options: Additional search options (e.g., order, publishedAfter, etc.)
+
+    Returns:
+        str: JSON string containing search results
+    """
+    extractor = get_extractor()
+    if not extractor:
+        return "YouTube Comment Extractor not initialized. Check your API key configuration."
+
+    try:
+        results = extractor.search_videos(query, max_results, **options)
+        return json.dumps(results)
+    except Exception as e:
+        return f"Failed to search videos: {e}"
+
+
+@mcp.tool()
 async def get_youtube_video_data_and_comments(
     video_url: str, 
     max_comments: int = 5,
     ) -> str:
     """
-    Get the comments for a YouTube video.
+    Download video data and comments for a YouTube video and store them in the database.
 
     Args:
         video_url: YouTube video URL
