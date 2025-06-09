@@ -40,6 +40,10 @@ def load_prompts():
     return prompts
 
 
+# Explicit variable declarations for type checking
+# These will be overwritten by the dynamic loading above
+rocket_system_prompt: str = ""
+
 # Load all prompts when the module is imported
 _loaded_prompts = load_prompts()
 
