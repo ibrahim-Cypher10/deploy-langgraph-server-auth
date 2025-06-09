@@ -1,0 +1,9 @@
+{
+    "dependencies": ["."],
+    "graphs": {
+      "rocket": "./src/rocket/graph.py:build_graph"
+    },
+    "env": ".env",
+    "python_version": "3.13",
+    "image_distro": "wolfi"
+}

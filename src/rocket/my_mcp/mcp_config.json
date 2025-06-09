@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "db": {
+      "command": "docker",
+      "args": [
+        "run", 
+        "-i", 
+        "--rm", 
+        "mcp/postgres",
+        "${SUPABASE_URI}"
+      ],
+      "transport": "stdio"
+    },
+    "youtube": {
+      "command": "python",
+      "args": [
+        "-m",
+        "src.rocket.my_mcp.youtube.server"
+      ],
+      "transport": "stdio"
+    }
+  }
+}
+  
