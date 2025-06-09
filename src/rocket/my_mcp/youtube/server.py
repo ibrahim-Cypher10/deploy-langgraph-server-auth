@@ -208,10 +208,7 @@ class YouTubeCommentExtractor:
             response = request.execute()
 
             if not response['items']:
-                return {
-                    'error': 'Video not found',
-                    'video_id': video_id
-                }
+                raise ValueError("Video not found")
 
             video = response['items'][0]
             snippet = video['snippet']
@@ -245,10 +242,7 @@ class YouTubeCommentExtractor:
             elif e.resp.status == 404:
                 print("Video not found. Check the video ID.")
 
-            return {
-                'error': f'HTTP error {e.resp.status}: {e.content.decode("utf-8")}',
-                'video_id': video_id
-            }
+            raise ValueError(f"Failed to get video info: {e}")
         except Exception as e:
             raise ValueError(f"Failed to get video info: {e}")
 
