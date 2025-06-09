@@ -5,9 +5,21 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "composio-langchain>=0.7.16",
+    "composio-openai>=0.7.16",
     "google-api-python-client>=2.171.0",
     "langchain-core>=0.3.63",
+    "langchain-mcp-adapters>=0.1.7",
     "langchain-openai>=0.3.19",
     "langgraph>=0.4.8",
+    "mcp>=1.9.3",
+    "psycopg2-binary>=2.9.10",
+    "pydantic>=2.11.5",
     "python-dotenv>=1.1.0",
+    "sqlalchemy>=2.0.41",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
 ]
