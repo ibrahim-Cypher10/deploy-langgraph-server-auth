@@ -1,12 +1,22 @@
 {
     "mcpServers": {
-        "youtube": {
-            "command": "python",
-            "args": [
-                "-m",
-                "rocket.my_mcp.youtube.server"
-            ],
-            "transport": "stdio"
-        }
+      "db": {
+        "command": "/opt/homebrew/bin/npx",
+        "args": [
+          "-y",
+          "@supabase/mcp-server-postgrest@latest",
+          "--apiUrl",
+          "${SUPABASE_DATA_API_URL}",
+          "--apiKey",
+          "${SUPABASE_ANON_KEY}",
+          "--schema",
+          "public"
+        ],
+        "env": {
+          "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+        },
+        "transport": "stdio"
+      }
     }
-}
+  }
+  
