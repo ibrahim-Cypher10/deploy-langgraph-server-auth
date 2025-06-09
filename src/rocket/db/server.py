@@ -14,8 +14,11 @@ load_dotenv()
 # DB Session
 # ----------------------------
 
+db_url = os.getenv("SUPABASE_URI", "")
+if not db_url:
+    raise ValueError("SUPABASE_URI environment variable not found. Please set it in your .env file or environment.")
+engine = create_engine(url=db_url)
 
-engine = create_engine(url=os.getenv("SUPABASE_URI"))
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -47,14 +50,10 @@ class Comment(BaseModel):
 
 
 # ----------------------------
-# MCP Server
+# Database Tools
 # ----------------------------
 
 
-# mcp = FastMCP("database")
-
-
-# @mcp.tool()
 async def db_create_video_record(video: Video) -> str:
     """
     Create a video record in the database.
@@ -81,10 +80,12 @@ async def db_create_video_record(video: Video) -> str:
             video_dict
         )
         session.commit()
-        return str(result.fetchone()[0])
+        row = result.fetchone()
+        if row:
+            return str(row[0])
+        return ""
     
 
-# @mcp.tool()
 async def db_upsert_comments_records(comments: List[Comment]):
     """
     Upsert comment records in the database (insert or update on conflict).
