@@ -321,8 +321,3 @@ async def get_youtube_video_data_and_comments(
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")
-
-import asyncio
-import nest_asyncio
-nest_asyncio.apply()
-asyncio.run(get_youtube_video_data_and_comments("https://www.youtube.com/watch?v=BdZ_GOaaz7M"))

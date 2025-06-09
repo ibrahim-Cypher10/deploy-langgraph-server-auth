@@ -1,22 +1,24 @@
 {
-    "mcpServers": {
-      "db": {
-        "command": "/opt/homebrew/bin/npx",
-        "args": [
-          "-y",
-          "@supabase/mcp-server-postgrest@latest",
-          "--apiUrl",
-          "${SUPABASE_DATA_API_URL}",
-          "--apiKey",
-          "${SUPABASE_ANON_KEY}",
-          "--schema",
-          "public"
-        ],
-        "env": {
-          "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
-        },
-        "transport": "stdio"
-      }
+  "mcpServers": {
+    "db": {
+      "command": "docker",
+      "args": [
+        "run", 
+        "-i", 
+        "--rm", 
+        "mcp/postgres",
+        "${SUPABASE_URI}"
+      ],
+      "transport": "stdio"
+    },
+    "youtube": {
+      "command": "python",
+      "args": [
+        "-m",
+        "src.rocket.my_mcp.youtube.server"
+      ],
+      "transport": "stdio"
     }
   }
+}
   
