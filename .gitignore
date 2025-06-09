@@ -15,3 +15,6 @@ uv.lock
 
 # env
 .env
+
+# langgraph api
+.langgraph_api
