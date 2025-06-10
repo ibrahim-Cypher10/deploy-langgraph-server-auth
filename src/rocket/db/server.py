@@ -1,10 +1,10 @@
 from mcp.server.fastmcp import FastMCP
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from dotenv import load_dotenv
 import os
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 
 load_dotenv()
@@ -14,12 +14,39 @@ load_dotenv()
 # DB Session
 # ----------------------------
 
-db_url = os.getenv("SUPABASE_URI", "")
-if not db_url:
-    raise ValueError("SUPABASE_URI environment variable not found. Please set it in your .env file or environment.")
-engine = create_engine(url=db_url)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Lazy initialization of database connection
+engine = None
+SessionLocal: Optional[sessionmaker] = None
+
+def get_db_session() -> Session:
+    """Get database session, initializing connection if necessary."""
+    global engine, SessionLocal
+    if engine is None or SessionLocal is None:
+        db_url = os.getenv("SUPABASE_URI", "")
+        if not db_url:
+            raise ValueError("SUPABASE_URI environment variable not found. Please set it in your .env file or environment.")
+        
+        # Add connection pooling and timeout settings
+        engine = create_engine(
+            url=db_url,
+            pool_size=5,
+            max_overflow=10,
+            pool_timeout=30,
+            pool_recycle=1800,  # Recycle connections after 30 minutes
+            pool_pre_ping=True  # Verify connections before using them
+        )
+        
+        SessionLocal = sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=engine
+        )
+    
+    if SessionLocal is None:
+        raise ValueError("Failed to initialize database session")
+        
+    return SessionLocal()
 
 
 # ----------------------------
@@ -68,7 +95,7 @@ async def db_create_video_record(video: Video) -> str:
     Returns:
         id: YouTube video ID
     """
-    with SessionLocal() as session:
+    with get_db_session() as session:
         video_dict = video.model_dump()
         result = session.execute(
             text(
@@ -99,7 +126,7 @@ async def db_upsert_comments_records(comments: List[Comment]):
     if not comments:
         return
 
-    with SessionLocal() as session:
+    with get_db_session() as session:
         # Convert Pydantic models to dictionaries for bulk upsert
         comment_dicts = [comment.model_dump() for comment in comments]
 
