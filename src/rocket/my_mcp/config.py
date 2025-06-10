@@ -114,34 +114,4 @@ def load_mcp_config() -> dict:
     return resolve_env_vars(config)
 
 
-# # Lazy loading of the configuration
-# _mcp_config = None
-
-# def get_mcp_config() -> dict:
-#     """Get the MCP configuration, loading it if necessary."""
-#     global _mcp_config
-#     if _mcp_config is None:
-#         _mcp_config = load_mcp_config()
-#     return _mcp_config
-
-# # For backward compatibility, provide mcp_config as a property-like access
-# class ConfigProxy:
-#     def __getitem__(self, key):
-#         return get_mcp_config()[key]
-
-#     def __contains__(self, key):
-#         return key in get_mcp_config()
-
-#     def keys(self):
-#         return get_mcp_config().keys()
-
-#     def values(self):
-#         return get_mcp_config().values()
-
-#     def items(self):
-#         return get_mcp_config().items()
-
-#     def get(self, key, default=None):
-#         return get_mcp_config().get(key, default)
-
 mcp_config = load_mcp_config()
