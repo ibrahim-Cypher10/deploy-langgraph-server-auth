@@ -49,15 +49,12 @@ async def build_graph() -> CompiledStateGraph:
 
     return builder.compile(checkpointer=MemorySaver())
 
-async def draw_graph():
-    from IPython.display import display, Image
 
+async def main():
     graph = await build_graph()
-    display(Image(graph.get_graph().draw_mermaid_png()))
+    print(graph.get_graph().draw_mermaid())
     
 
 if __name__ == "__main__":
     import asyncio
-    import nest_asyncio
-    nest_asyncio.apply()
-    asyncio.run(draw_graph())
+    asyncio.run(main())
