@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "db": {
+    "postgres": {
       "command": "npx",
       "args": [
         "-y",
