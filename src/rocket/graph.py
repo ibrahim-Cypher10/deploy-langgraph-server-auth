@@ -10,6 +10,7 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from rocket.my_mcp.config import mcp_config
 from dotenv import load_dotenv
 from rocket.prompts.prompts import rocket_system_prompt
+import asyncio
 
 
 load_dotenv()
@@ -20,16 +21,16 @@ class AgentState(BaseModel):
 
 
 # Global cache for the compiled graph
-_cached_graph: Optional[CompiledStateGraph] = None
+graph: Optional[CompiledStateGraph] = None
 
 
 async def build_graph() -> CompiledStateGraph:
     """Build and cache the graph to avoid rebuilding on every request."""
-    global _cached_graph
+    global graph
 
     # Return cached graph if available
-    if _cached_graph is not None:
-        return _cached_graph
+    if graph is not None:
+        return graph
     print("Building graph for the first time...")
 
     builder = StateGraph(AgentState)
@@ -61,18 +62,6 @@ async def build_graph() -> CompiledStateGraph:
     builder.add_conditional_edges("assistant", assistant_router, ["tools", END])
     builder.add_edge("tools", "assistant")
 
-    print("Compiling graph...")
-    _cached_graph = builder.compile(checkpointer=MemorySaver())
-    print("Graph compiled and cached successfully!")
+    return builder.compile(checkpointer=MemorySaver())
 
-    return _cached_graph
-
-
-async def main():
-    graph = await build_graph()
-    print(graph.get_graph().draw_mermaid())
-    
-
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+graph = asyncio.run(build_graph())
