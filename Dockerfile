@@ -1,6 +1,7 @@
 FROM langchain/langgraph-api:3.13-wolfi
 
-
+# Install Node.js and npm for MCP postgres server
+RUN apk add --no-cache nodejs npm
 
 # -- Adding local package . --
 ADD . /deps/deploy-langgraph-server-auth
@@ -10,6 +11,7 @@ ADD . /deps/deploy-langgraph-server-auth
 RUN PYTHONDONTWRITEBYTECODE=1 uv pip install --system --no-cache-dir -c /api/constraints.txt -e /deps/*
 # -- End of local dependencies install --
 ENV LANGSERVE_GRAPHS='{"rocket": "/deps/deploy-langgraph-server-auth/src/rocket/graph.py:build_graph"}'
+ENV PYTHONPATH="/deps/deploy-langgraph-server-auth"
 
 
 
