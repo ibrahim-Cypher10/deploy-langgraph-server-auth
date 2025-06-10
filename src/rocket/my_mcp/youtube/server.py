@@ -310,7 +310,7 @@ mcp = FastMCP("Youtube MCP")
 
 
 @mcp.tool()
-async def search_videos(
+async def youtube_search_videos(
     query: str, 
     max_results: int = 10, 
     **options
@@ -338,7 +338,7 @@ async def search_videos(
 
 
 @mcp.tool()
-async def get_youtube_video_data_and_comments(
+async def youtube_load_video_data_and_comments(
     video_url: str, 
     max_comments: int = 5,
     ) -> str:
