@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from mcp.server.fastmcp import FastMCP
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -315,7 +316,7 @@ async def search_videos(
     **options
     ) -> str:
     """
-    Search for YouTube videos based on query and options.
+    Search YouTube for videos based on query and options.
 
     Args:
         query: Search query
