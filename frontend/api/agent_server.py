@@ -13,7 +13,7 @@ import traceback
 load_dotenv()
 
 
-LANGGRAPH_SERVER_URL = os.getenv("LANGGRAPH_SERVER_URL", "")
+LANGGRAPH_SERVER_URL = os.getenv("LANGGRAPH_SERVER_URL", "http://localhost:2024")
 if not LANGGRAPH_SERVER_URL:
     raise ValueError("LANGGRAPH_SERVER_URL environment variable not found. Please set it in your .env file or environment.")
 
@@ -95,8 +95,12 @@ class Event(BaseModel):
     event_type: str
     data: Dict[str, Any]
 
+# Global state to track tool calls across chunks
+_current_tool_call = None
+
 def process_chunk(chunk) -> str:
     """Process a chunk of data from the streaming response."""
+    global _current_tool_call
     return_string = ""
 
     # Decode the byte string to a regular string
@@ -104,7 +108,7 @@ def process_chunk(chunk) -> str:
 
     # Split the chunk into lines
     lines = chunk_str.split('\r\n')
-    
+
     # Iterate over the lines to find event and data
     event_type = None
     data = None
@@ -127,32 +131,62 @@ def process_chunk(chunk) -> str:
             event = Event(event_type=event_type, data=message)
 
             if message["type"] == "AIMessageChunk":
-                if message["tool_calls"]:
-                    # patch filter required for json patching in trustcall
-                    if message["tool_calls"][0]["name"] != "":
-                        tool_name = message["tool_calls"][0].get("name", None)
-                        tool_call_id = message["tool_calls"][0].get("id", None)
-                        tool_args = message["tool_calls"][0].get("args", None)
+                # Handle tool calls
+                if message.get("tool_calls"):
+                    tool_call = message["tool_calls"][0]
+                    # Check if this is the start of a new tool call (has name and id)
+                    if tool_call.get("name") and tool_call.get("id"):
+                        if _current_tool_call is None:
+                            _current_tool_call = {
+                                "name": tool_call["name"],
+                                "id": tool_call["id"],
+                                "args_str": ""
+                            }
+                            return_string = f"\n\n``` Tool Call \nName: {tool_call['name']}\n\nArgs: "
 
-                        return_string = f"\n\n```\nTool Call: {tool_name}\n\nTool Args: {tool_args}\n```\n\n"
+                        # If we have complete args, show them
+                        if tool_call.get("args") and isinstance(tool_call["args"], dict):
+                            return_string = f"{tool_call['args']}\n```\n\n"
+                            _current_tool_call = None
 
-                if message["content"]:
+                # Handle tool call chunks (streaming arguments)
+                if message.get("tool_call_chunks"):
+                    chunk_data = message["tool_call_chunks"][0]
+                    if _current_tool_call and chunk_data.get("args"):
+                        _current_tool_call["args_str"] += chunk_data["args"]
+
+                # Check if tool call is complete
+                if (message.get("response_metadata", {}).get("finish_reason") == "tool_calls"
+                    and _current_tool_call):
+                    try:
+                        # Try to parse the accumulated arguments
+                        args_dict = json.loads(_current_tool_call["args_str"])
+                        return_string = f"{args_dict}\n```\n\n"
+                    except json.JSONDecodeError:
+                        return_string = f"{_current_tool_call['args_str']}\n```\n\n"
+                    _current_tool_call = None
+
+                # Handle regular content
+                if message.get("content"):
                     return_string = message["content"]
-                
+
             # tool responses
             if message["type"] == "tool":
                 tool_name = message.get("name", None)
                 tool_call_id = message.get("tool_call_id", None)
-                    
-                return_string = f"\n\n```\nTool Response Successful: {tool_name}\n```\n\n"
-            
+                tool_content = message.get("content", "")
+
+                return_string = f"\n``` Tool Response Successful \nName: {tool_name}\n```\n\n"
+
+                # Optional: return the tool output
+                # return_string = f"\n``` Tool Response \nName: {tool_name}\n\nContent: {tool_content}\n```\n\n"
+
     return return_string
 
 
 async def run_stream_from_message(thread_id: UUID, assistant_id: str,  message: str, configurable: dict):
     """Stream messages from the langgraph API"""
     try:
-        print(f"Connecting to: {LANGGRAPH_SERVER_URL}/threads/{str(thread_id)}/runs/stream")
         with httpx.stream(
             method="POST",
             url=f"{LANGGRAPH_SERVER_URL}/threads/{str(thread_id)}/runs/stream",
@@ -162,12 +196,13 @@ async def run_stream_from_message(thread_id: UUID, assistant_id: str,  message: 
                     "messages": [message]
                     },
                 "config": {
-                    "recursion_limit": 30,
+                    "recursion_limit": 15,
                     "configurable": configurable
                     },
                 "stream_mode": "messages-tuple",
                 "stream_subgraphs": False,
             },
+            timeout=120.0
             ) as stream:
             for chunk in stream.iter_bytes():
                 if not chunk:
@@ -187,41 +222,3 @@ async def run_stream_from_message(thread_id: UUID, assistant_id: str,  message: 
     except Exception as e:
         print(f"Error in run_stream_from_message: {str(e)}")
         print(f"Traceback: {traceback.format_exc()}")
-
-
-
-import asyncio
-import nest_asyncio
-nest_asyncio.apply()
-
-async def main():
-    user_id = UUID("00000000-0000-0000-0000-000000000000")
-    try:
-        thread_id = await create_thread(user_id)
-        print(f"Created thread: {thread_id}")
-
-        threads = await search_threads(user_id)
-        print(f"Found threads: {threads}")
-
-        configurable = {
-            "thread_id": str(thread_id)
-        }
-
-        async for result in run_stream_from_message(
-            thread_id=thread_id, 
-            assistant_id="rocket", 
-            message="hi", 
-            configurable=configurable
-            ):
-            print(result, end="", flush=True)
-
-        await delete_thread(thread_id)
-        print(f"Deleted thread: {thread_id}")
-    except Exception as e:
-        print(f"Error: {type(e).__name__}: {str(e)}")
-        raise
-    
-if __name__ == "__main__":
-    import nest_asyncio
-    nest_asyncio.apply()
-    asyncio.run(main())
