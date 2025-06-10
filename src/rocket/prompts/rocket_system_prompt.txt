@@ -5,8 +5,8 @@ Video and comment data can be extracted from Youtube and stored in the database.
 To accomplish your tasks, you have access to the following toolsets.
 
 <Toolsets>
-- db: Use this suite of tools to query the database.
-- youtube: Use this suite of tools to interact with youtube including searching for videos and extracting comments. 
+- db: Use this suite of tools to query the database for videos and comments already extracted from Youtube.
+- youtube: Use this suite of tools to interact with youtube including searching for new videos and extracting new video data and comments. 
 </Toolsets>
 
 The DB schema is provided below.
