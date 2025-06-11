@@ -70,15 +70,25 @@ logging.getLogger("langgraph_api").setLevel(logging.INFO)
 logging.getLogger("uvicorn").setLevel(logging.INFO)
 logging.getLogger("uvicorn.access").setLevel(logging.INFO)
 
-# Import the LangGraph server app AFTER environment validation
-print("Importing LangGraph server...")
-try:
-    from langgraph_api.server import app as langgraph_app
-    print("LangGraph server imported successfully")
-except Exception as e:
-    print(f"ERROR: Failed to import LangGraph server: {e}")
-    print("This might be due to missing environment variables or database connection issues.")
-    sys.exit(1)
+# Don't import LangGraph server during module loading - do it lazily
+# This prevents blocking the server startup process
+langgraph_app = None
+
+
+def get_langgraph_app():
+    """Lazily import and return the LangGraph server app."""
+    global langgraph_app
+    if langgraph_app is None:
+        print("Importing LangGraph server...")
+        try:
+            from langgraph_api.server import app as _langgraph_app
+            langgraph_app = _langgraph_app
+            print("LangGraph server imported successfully")
+        except Exception as e:
+            print(f"ERROR: Failed to import LangGraph server: {e}")
+            print("This might be due to missing environment variables or database connection issues.")
+            raise
+    return langgraph_app
 
 
 def create_app_with_middleware():
@@ -119,15 +129,32 @@ def create_app_with_middleware():
                 "DATABASE_URI": "✓ Set" if os.getenv('DATABASE_URI') else "✗ Missing",
                 "LANGSMITH_API_KEY": "✓ Set" if os.getenv('LANGSMITH_API_KEY') else "✗ Missing",
                 "ROCKET_API_KEY": "✓ Set" if os.getenv('ROCKET_API_KEY') else "✗ Missing"
-            }
+            },
+            "langgraph_status": "not_loaded" if langgraph_app is None else "loaded"
         }
 
         return JSONResponse(health_status)
 
-    # Mount the LangGraph app as a sub-application
-    # This preserves all LangGraph functionality while adding our middleware
-    app.mount("/", langgraph_app)
-    logger.info("LangGraph app mounted successfully")
+    # Import LangGraph app now that basic server is set up
+    # This allows health checks to work even if LangGraph import fails
+    langgraph_error = None
+    try:
+        _langgraph_app = get_langgraph_app()
+        # Mount the LangGraph app as a sub-application
+        # This preserves all LangGraph functionality while adding our middleware
+        app.mount("/", _langgraph_app)
+        logger.info("LangGraph app mounted successfully")
+    except Exception as e:
+        langgraph_error = str(e)
+        logger.error(f"Failed to import/mount LangGraph app: {e}")
+        # Add a fallback route that returns an error for non-health endpoints
+        @app.route("/{path:path}")
+        async def langgraph_unavailable(_request):
+            from starlette.responses import JSONResponse
+            return JSONResponse(
+                status_code=503,
+                content={"error": "LangGraph server not available", "detail": langgraph_error}
+            )
 
     logger.info("LangGraph server with auth middleware initialized successfully")
     return app
