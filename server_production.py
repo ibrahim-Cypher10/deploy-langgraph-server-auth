@@ -7,8 +7,24 @@ current Starlette best practices for middleware configuration.
 """
 
 import uvicorn
+import logging
+import sys
 from starlette.applications import Starlette
 from auth_middleware import create_middleware_stack
+
+# Configure logging to ensure all LangGraph logs are visible
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+# Set specific loggers to INFO level to capture LangGraph API logs
+logging.getLogger("langgraph_api").setLevel(logging.INFO)
+logging.getLogger("uvicorn").setLevel(logging.INFO)
+logging.getLogger("uvicorn.access").setLevel(logging.INFO)
 
 # Import the LangGraph server app
 from langgraph_api.server import app as langgraph_app
@@ -37,6 +53,11 @@ def create_app_with_middleware():
     # Mount the LangGraph app as a sub-application
     # This preserves all LangGraph functionality while adding our middleware
     app.mount("/", langgraph_app)
+
+    # Log that the app has been created with middleware
+    logger = logging.getLogger(__name__)
+    logger.info("LangGraph server with auth middleware initialized successfully")
+    logger.info(f"Middleware stack: {[m.__class__.__name__ for m in middleware_stack]}")
 
     return app
 

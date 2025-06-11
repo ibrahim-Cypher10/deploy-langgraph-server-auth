@@ -1,12 +1,15 @@
 import os
+import logging
 from typing import List, Optional
-from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
 
 
 class APIKeyAuthMiddleware(BaseHTTPMiddleware):
@@ -36,17 +39,23 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         Returns:
             Response object (either error or from next handler)
         """
+        # Log incoming request for debugging
+        logger.debug(f"Processing request: {request.method} {request.url.path}")
+
         # Skip authentication if not required
         if not self.api_key_required:
+            logger.debug("API key not required, skipping authentication")
             return await call_next(request)
 
         # Skip authentication for OPTIONS requests (preflight)
         if request.method == "OPTIONS":
+            logger.debug("OPTIONS request, skipping authentication")
             return await call_next(request)
 
         # Skip authentication for internal LangGraph endpoints
         internal_paths = ["/ok", "/health", "/metrics"]
         if request.url.path in internal_paths:
+            logger.debug(f"Internal path {request.url.path}, skipping authentication")
             return await call_next(request)
 
         # Get API key from header or query parameter (for streaming endpoints)
@@ -57,11 +66,13 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
 
         # Validate API key
         if not request_api_key or request_api_key != self.api_key:
+            logger.warning(f"Authentication failed for {request.method} {request.url.path}")
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Invalid or missing API key"}
             )
 
+        logger.debug(f"Authentication successful for {request.method} {request.url.path}")
         # Continue processing the request
         return await call_next(request)
 
