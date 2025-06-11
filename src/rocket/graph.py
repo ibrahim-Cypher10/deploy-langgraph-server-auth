@@ -88,43 +88,20 @@ async def get_graph() -> CompiledStateGraph:
     return _cached_graph
 
 
-# For LangGraph server compatibility, we need to provide a graph object
-# But we'll make it truly lazy to avoid blocking server startup
+def create_graph() -> CompiledStateGraph:
+    """
+    Factory function to create the graph for LangGraph server.
 
-# Create a simple wrapper that defers graph creation until first access
-class LazyCompiledGraph:
-    """A minimal wrapper that creates the graph only when first accessed."""
-
-    def __init__(self):
-        self._graph: Optional[CompiledStateGraph] = None
-        self._building = False
-
-    def _ensure_graph(self) -> CompiledStateGraph:
-        """Ensure the graph is built, but only build it once."""
-        if self._graph is None and not self._building:
-            self._building = True
-            try:
-                # Use asyncio.run to build the graph synchronously when needed
-                self._graph = asyncio.run(build_graph())
-                print("Graph built successfully on first access")
-            except Exception as e:
-                print(f"Failed to build graph: {e}")
-                self._building = False
-                raise
-            finally:
-                self._building = False
-
-        if self._graph is None:
-            raise RuntimeError("Graph failed to initialize")
-        return self._graph
-
-    def __getattr__(self, name):
-        """Delegate all attribute access to the actual graph."""
-        actual_graph = self._ensure_graph()
-        return getattr(actual_graph, name)
+    This function is called by LangGraph server during startup.
+    It uses the same caching mechanism as get_graph() to avoid rebuilding.
+    """
+    print("Creating graph via factory function for LangGraph server...")
+    # Use asyncio.run to call the async get_graph function
+    return asyncio.run(get_graph())
 
 
-# Create the lazy graph that LangGraph server will import
-graph = LazyCompiledGraph()
+# Provide the graph as a factory function for LangGraph server
+# This is the recommended approach for LangGraph server integration
+graph = create_graph
 
-print("Graph module loaded - graph will be initialized when first needed by LangGraph server")
+print("Graph module loaded - factory function available for LangGraph server, get_graph() available for direct use")
