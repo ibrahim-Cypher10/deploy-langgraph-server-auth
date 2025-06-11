@@ -52,8 +52,8 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             logger.debug("OPTIONS request, skipping authentication")
             return await call_next(request)
 
-        # Skip authentication for internal LangGraph endpoints
-        internal_paths = ["/ok", "/health", "/metrics"]
+        # Skip authentication for internal LangGraph endpoints and health checks
+        internal_paths = ["/", "/ok", "/health", "/metrics"]
         if request.url.path in internal_paths:
             logger.debug(f"Internal path {request.url.path}, skipping authentication")
             return await call_next(request)
