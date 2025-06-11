@@ -39,8 +39,9 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         Returns:
             Response object (either error or from next handler)
         """
-        # Log incoming request for debugging
-        logger.debug(f"Processing request: {request.method} {request.url.path}")
+        # Log incoming request for debugging (but not for high-frequency internal calls)
+        if not request.url.path.startswith(("/_internal/", "/metrics")):
+            logger.debug(f"Processing request: {request.method} {request.url.path}")
 
         # Skip authentication if not required
         if not self.api_key_required:
@@ -70,8 +71,22 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             return Response(status_code=204)
 
         # Skip authentication for internal LangGraph endpoints and health checks
-        internal_paths = ["/ok", "/health", "/metrics", "/docs", "/openapi.json"]
-        if request.url.path in internal_paths:
+        # This is critical to avoid interfering with LangGraph's internal operations
+        internal_paths = [
+            "/ok", "/health", "/metrics", "/docs", "/openapi.json",
+            "/health-detailed",  # Our custom health check
+            # LangGraph internal endpoints that should not be blocked
+            "/__health__", "/ready", "/startup", "/shutdown"
+        ]
+
+        # Also skip authentication for any path that starts with internal prefixes
+        internal_prefixes = [
+            "/_internal/",  # LangGraph internal routes
+            "/api/v1/health",  # Alternative health check patterns
+        ]
+
+        if (request.url.path in internal_paths or
+            any(request.url.path.startswith(prefix) for prefix in internal_prefixes)):
             logger.debug(f"Internal path {request.url.path}, skipping authentication")
             return await call_next(request)
 

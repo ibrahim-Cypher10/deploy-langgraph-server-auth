@@ -93,71 +93,81 @@ def get_langgraph_app():
 
 def create_app_with_middleware():
     """
-    Create a new Starlette app with middleware using best practices.
+    Wrap the LangGraph app with middleware instead of mounting it.
 
-    This follows current Starlette recommendations by configuring
-    middleware during app initialization rather than post-creation.
+    This preserves the LangGraph app's original context and avoids
+    issues with database connection pools and application lifecycle.
 
     Returns:
-        Starlette: Configured application with middleware
+        The LangGraph app wrapped with middleware
     """
     logger = logging.getLogger(__name__)
     logger.info("Creating app with middleware...")
 
-    # Get the middleware stack
-    middleware_stack = create_middleware_stack()
-    logger.info(f"Middleware stack created: {[m.__class__.__name__ for m in middleware_stack]}")
-
-    # Create a new app with middleware configured at initialization
-    # This is the recommended approach per Starlette docs
-    app = Starlette(
-        middleware=middleware_stack,
-        debug=False  # Production mode
-    )
-    logger.info("Starlette app created with middleware")
-
-    # Add a custom health check endpoint before mounting LangGraph
-    @app.route("/health-detailed")
-    async def health_detailed(_request):
-        """Detailed health check including database connectivity."""
-        from starlette.responses import JSONResponse
-
-        health_status = {
-            "status": "healthy",
-            "service": "LangGraph Server with Auth",
-            "environment_variables": {
-                "DATABASE_URI": "✓ Set" if os.getenv('DATABASE_URI') else "✗ Missing",
-                "LANGSMITH_API_KEY": "✓ Set" if os.getenv('LANGSMITH_API_KEY') else "✗ Missing",
-                "ROCKET_API_KEY": "✓ Set" if os.getenv('ROCKET_API_KEY') else "✗ Missing"
-            },
-            "langgraph_status": "not_loaded" if langgraph_app is None else "loaded"
-        }
-
-        return JSONResponse(health_status)
-
-    # Import LangGraph app now that basic server is set up
-    # This allows health checks to work even if LangGraph import fails
+    # Import LangGraph app first
     langgraph_error = None
     try:
-        _langgraph_app = get_langgraph_app()
-        # Mount the LangGraph app as a sub-application
-        # This preserves all LangGraph functionality while adding our middleware
-        app.mount("/", _langgraph_app)
-        logger.info("LangGraph app mounted successfully")
+        langgraph_app = get_langgraph_app()
+        logger.info("LangGraph app imported successfully")
     except Exception as e:
         langgraph_error = str(e)
-        logger.error(f"Failed to import/mount LangGraph app: {e}")
-        # Add a fallback route that returns an error for non-health endpoints
-        @app.route("/{path:path}")
+        logger.error(f"Failed to import LangGraph app: {e}")
+        # Create a minimal fallback app
+        from starlette.applications import Starlette
+        from starlette.responses import JSONResponse
+
+        fallback_app = Starlette()
+
+        @fallback_app.route("/{path:path}")
         async def langgraph_unavailable(_request):
-            from starlette.responses import JSONResponse
             return JSONResponse(
                 status_code=503,
                 content={"error": "LangGraph server not available", "detail": langgraph_error}
             )
 
+        langgraph_app = fallback_app
+
+    # Get the middleware stack
+    middleware_stack = create_middleware_stack()
+    logger.info(f"Middleware stack created: {[m.__class__.__name__ for m in middleware_stack]}")
+
+    # Add middleware to the existing LangGraph app instead of mounting it
+    # This preserves the original app context and avoids database pool issues
+    for middleware in reversed(middleware_stack):  # Apply in reverse order
+        langgraph_app = middleware.cls(langgraph_app, **middleware.kwargs)
+
+    # Add custom health check route by wrapping the app
+    class HealthCheckWrapper:
+        def __init__(self, app):
+            self.app = app
+
+        async def __call__(self, scope, receive, send):
+            # Handle health check requests
+            if scope["type"] == "http" and scope["path"] == "/health-detailed":
+                from starlette.responses import JSONResponse
+
+                health_status = {
+                    "status": "healthy",
+                    "service": "LangGraph Server with Auth",
+                    "environment_variables": {
+                        "DATABASE_URI": "✓ Set" if os.getenv('DATABASE_URI') else "✗ Missing",
+                        "LANGSMITH_API_KEY": "✓ Set" if os.getenv('LANGSMITH_API_KEY') else "✗ Missing",
+                        "ROCKET_API_KEY": "✓ Set" if os.getenv('ROCKET_API_KEY') else "✗ Missing"
+                    },
+                    "langgraph_status": "loaded"
+                }
+
+                response = JSONResponse(health_status)
+                await response(scope, receive, send)
+                return
+
+            # Forward all other requests to the wrapped app
+            await self.app(scope, receive, send)
+
+    wrapped_app = HealthCheckWrapper(langgraph_app)
+
     logger.info("LangGraph server with auth middleware initialized successfully")
-    return app
+    return wrapped_app
 
 
 # Create the app using the modern approach
