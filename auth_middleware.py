@@ -2,7 +2,7 @@ import os
 import logging
 from typing import List, Optional
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse, Response, PlainTextResponse
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -52,8 +52,25 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             logger.debug("OPTIONS request, skipping authentication")
             return await call_next(request)
 
+        # Handle root path with a simple health check response
+        if request.url.path == "/":
+            logger.debug("Root path request, returning health check")
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "status": "healthy",
+                    "service": "LangGraph Server with Auth",
+                    "message": "Server is running"
+                }
+            )
+
+        # Handle favicon requests
+        if request.url.path == "/favicon.ico":
+            logger.debug("Favicon request, returning 204 No Content")
+            return Response(status_code=204)
+
         # Skip authentication for internal LangGraph endpoints and health checks
-        internal_paths = ["/", "/ok", "/health", "/metrics"]
+        internal_paths = ["/ok", "/health", "/metrics", "/docs", "/openapi.json"]
         if request.url.path in internal_paths:
             logger.debug(f"Internal path {request.url.path}, skipping authentication")
             return await call_next(request)
