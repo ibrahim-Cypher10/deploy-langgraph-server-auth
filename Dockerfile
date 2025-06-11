@@ -35,5 +35,5 @@ RUN uv pip uninstall --system pip setuptools wheel && rm /usr/bin/uv /usr/bin/uv
 
 WORKDIR /deps/deploy-langgraph-server-auth
 
-# -- Use our own entrypoint with auth middleware --
-ENTRYPOINT ["python", "/api/server_production.py"]
+# -- Use the proxy server that adds auth without modifying LangGraph --
+ENTRYPOINT ["python", "/api/server_proxy.py"]

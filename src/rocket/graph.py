@@ -21,50 +21,25 @@ class AgentState(BaseModel):
 
 
 # Global cache for the compiled graph
-_cached_graph: Optional[CompiledStateGraph] = None
-_graph_built = False
+graph: Optional[CompiledStateGraph] = None
 
 
-def build_graph() -> CompiledStateGraph:
+async def build_graph() -> CompiledStateGraph:
     """Build and cache the graph to avoid rebuilding on every request."""
-    global _cached_graph, _graph_built
+    global graph
 
     # Return cached graph if available
-    if _cached_graph is not None:
-        return _cached_graph
+    if graph is not None:
+        return graph
 
-    # Prevent multiple concurrent initializations
-    if _graph_built:
-        # Another thread is building, wait a bit and check again
-        import time
-        time.sleep(0.1)
-        if _cached_graph is not None:
-            return _cached_graph
-
-    _graph_built = True
-    print("Building graph...")
+    print("Building graph for the first time...")
 
     builder = StateGraph(AgentState)
 
     print("Initializing MCP client and getting tools...")
-    try:
-        # Initialize MCP client and get tools synchronously
-        client = MultiServerMCPClient(connections=mcp_config["mcpServers"])
-
-        # Create a new event loop for this operation
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            tools = loop.run_until_complete(
-                asyncio.wait_for(client.get_tools(), timeout=30.0)
-            )
-            print(f"Successfully loaded {len(tools)} tools")
-        finally:
-            loop.close()
-
-    except Exception as e:
-        print(f"WARNING: MCP client initialization failed: {e}, using empty tools list")
-        tools = []
+    client = MultiServerMCPClient(connections=mcp_config["mcpServers"])
+    tools = await client.get_tools()
+    print(f"Successfully loaded {len(tools)} tools")
 
     llm = ChatOpenAI(model="gpt-4.1-mini-2025-04-14", temperature=0.1).bind_tools(tools)
 
@@ -88,19 +63,6 @@ def build_graph() -> CompiledStateGraph:
     builder.add_conditional_edges("assistant", assistant_router, ["tools", END])
     builder.add_edge("tools", "assistant")
 
-    compiled_graph = builder.compile(checkpointer=MemorySaver())
-    _cached_graph = compiled_graph
-    print("Graph built and cached successfully")
-    return compiled_graph
+    return builder.compile(checkpointer=MemorySaver())
 
-
-def get_graph() -> CompiledStateGraph:
-    """Get the graph, building it lazily if not already built."""
-    return build_graph()
-
-
-# Provide the graph as a factory function for LangGraph server
-# This is the recommended approach for LangGraph server integration
-graph = build_graph
-
-print("Graph module loaded - build_graph() serves as both factory function and direct access method")
+graph = asyncio.run(build_graph())
