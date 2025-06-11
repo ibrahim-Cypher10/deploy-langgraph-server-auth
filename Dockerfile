@@ -17,7 +17,7 @@ RUN touch /api/__init__.py /api/middleware/__init__.py
 # -- Installing all local dependencies --
 RUN PYTHONDONTWRITEBYTECODE=1 uv pip install --system --no-cache-dir -c /api/constraints.txt -e /deps/*
 # -- End of local dependencies install --
-ENV LANGSERVE_GRAPHS='{"rocket": "/deps/deploy-langgraph-server-auth/src/rocket/graph.py:build_graph"}'
+ENV LANGSERVE_GRAPHS='{"rocket": "/deps/deploy-langgraph-server-auth/src/rocket/graph.py:graph"}'
 ENV PYTHONPATH="/deps/deploy-langgraph-server-auth"
 
 
