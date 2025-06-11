@@ -1,4 +1,4 @@
-FROM langchain/langgraph-api:3.13-wolfi
+FROM langchain/langgraph-api:3.13
 
 # Install Node.js and npm for MCP postgres server
 RUN apk add --no-cache nodejs npm
