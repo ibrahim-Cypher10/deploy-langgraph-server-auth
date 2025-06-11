@@ -1,7 +1,7 @@
 FROM langchain/langgraph-api:3.13
 
 # Install Node.js and npm for MCP postgres server
-RUN apk add --no-cache nodejs npm
+RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
 
 # -- Adding local package . --
 ADD . /deps/deploy-langgraph-server-auth
