@@ -27,14 +27,18 @@ def get_db_session() -> Session:
         if not db_url:
             raise ValueError("SUPABASE_URI environment variable not found. Please set it in your .env file or environment.")
         
-        # Add connection pooling and timeout settings
+        # Add connection pooling and timeout settings optimized for memory usage
         engine = create_engine(
             url=db_url,
-            pool_size=5,
-            max_overflow=10,
-            pool_timeout=30,
-            pool_recycle=1800,  # Recycle connections after 30 minutes
-            pool_pre_ping=True  # Verify connections before using them
+            pool_size=3,  # Reduced from 5 to limit concurrent connections
+            max_overflow=5,  # Reduced from 10 to limit memory usage
+            pool_timeout=20,  # Reduced timeout
+            pool_recycle=900,  # Recycle connections after 15 minutes (reduced from 30)
+            pool_pre_ping=True,  # Verify connections before using them
+            echo=True,
+            connect_args={
+                "options": "-c statement_timeout=30000"  # 30 second statement timeout
+            }
         )
         
         SessionLocal = sessionmaker(

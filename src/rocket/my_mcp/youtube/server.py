@@ -159,6 +159,9 @@ class YouTubeCommentExtractor:
                 if not next_page_token:
                     break
 
+                # Clear response from memory to prevent accumulation
+                del response
+
                 # Be respectful to the API - add a small delay
                 time.sleep(0.1)
 
@@ -352,7 +355,7 @@ async def youtube_search_videos(
 
 @mcp.tool()
 async def youtube_load_video_data_and_comments(
-    video_url: str, 
+    video_url: str,
     max_comments: int = 5,
     ) -> str:
     """
@@ -360,7 +363,7 @@ async def youtube_load_video_data_and_comments(
 
     Args:
         video_url: YouTube video URL
-        max_comments: Maximum number of comments to retrieve (default: 5)
+        max_comments: Maximum number of comments to retrieve (default: 5). Limited to 50 to prevent memory issues.
 
     Returns:
         str: Success message or error message
@@ -370,7 +373,11 @@ async def youtube_load_video_data_and_comments(
         return "YouTube Comment Extractor not initialized. Check your API key configuration."
 
     try:
-        
+        # Limit max_comments to prevent memory issues
+        if max_comments > 50:
+            logger.warning(f"Limiting max_comments from {max_comments} to 50 to prevent memory issues")
+            max_comments = 50
+
         video = extractor.get_video_info(video_url)
         if not video:
             return f"Failed to get video info for {video_url}."
@@ -381,10 +388,23 @@ async def youtube_load_video_data_and_comments(
 
         comments = extractor.extract_comments(video_url, max_comments=max_comments)
 
-        comments = [Comment.model_validate(comment) for comment in comments]
-        await db_upsert_comments_records(comments)
-        
-        return f"""Successfully loaded video and comments for {video.title} to the database."""
+        # Process comments in smaller batches to reduce memory usage
+        batch_size = 20
+        total_processed = 0
+        for i in range(0, len(comments), batch_size):
+            batch = comments[i:i + batch_size]
+            validated_batch = [Comment.model_validate(comment) for comment in batch]
+            await db_upsert_comments_records(validated_batch)
+            total_processed += len(validated_batch)
+
+            # Clear the batch from memory
+            del validated_batch
+            del batch
+
+        # Clear comments from memory
+        del comments
+
+        return f"""Successfully loaded video and {total_processed} comments for {video.title} to the database."""
 
     except Exception as e:
         return f"Failed to load video and comments for {video_url}: \n\n{str(e)}"
