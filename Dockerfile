@@ -7,6 +7,13 @@ RUN apk add --no-cache nodejs npm
 ADD . /deps/deploy-langgraph-server-auth
 # -- End of local package . --
 
+# -- Create auth middleware directory and copy files --
+RUN mkdir -p /api/middleware
+COPY auth_middleware.py /api/middleware/
+COPY server_production.py /api/
+RUN touch /api/__init__.py /api/middleware/__init__.py
+# -- End of auth middleware setup --
+
 # -- Installing all local dependencies --
 RUN PYTHONDONTWRITEBYTECODE=1 uv pip install --system --no-cache-dir -c /api/constraints.txt -e /deps/*
 # -- End of local dependencies install --
@@ -27,3 +34,6 @@ RUN uv pip uninstall --system pip setuptools wheel && rm /usr/bin/uv /usr/bin/uv
 # -- End of pip removal --
 
 WORKDIR /deps/deploy-langgraph-server-auth
+
+# -- Use our own entrypoint with auth middleware --
+ENTRYPOINT ["python", "/api/server_production.py"]
