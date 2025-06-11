@@ -20,7 +20,7 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: ASGIApp, api_key: Optional[str] = None) -> None:
         super().__init__(app)
         # Get API key from parameter or environment variable
-        self.api_key = api_key or os.getenv("LUNA_API_KEY", "")
+        self.api_key = api_key or os.getenv("ROCKET_API_KEY", "")
         self.api_key_required = bool(self.api_key.strip())
 
         print(f"API Key Authentication middleware initialized. Required: {self.api_key_required}")
