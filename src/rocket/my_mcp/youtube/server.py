@@ -292,7 +292,20 @@ def get_extractor():
     if extractor is None:
         try:
             # Load environment variables when actually needed
-            load_dotenv()
+            # Try multiple .env file locations for robustness
+            load_dotenv()  # Current directory
+            load_dotenv(dotenv_path=".env")  # Explicit current directory
+            load_dotenv(dotenv_path="../../../.env")  # Project root
+            load_dotenv(dotenv_path="../../../../.env")  # In case we're deeper
+
+            # Debug: Print whether the API key is found
+            api_key = os.getenv("YOUTUBE_DATA_API_KEY")
+            if api_key:
+                print(f"YouTube API key found: {api_key[:10]}...")
+            else:
+                print("YouTube API key not found in environment variables")
+                print(f"Available env vars: {list(os.environ.keys())}")
+
             extractor = YouTubeCommentExtractor()
             print("YouTube Comment Extractor initialized successfully!")
         except Exception as e:

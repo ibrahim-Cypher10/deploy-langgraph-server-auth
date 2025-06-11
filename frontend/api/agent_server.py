@@ -5,7 +5,7 @@ import uuid
 from uuid import UUID
 from dotenv import load_dotenv
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import traceback
 
@@ -102,6 +102,7 @@ class SSEParser:
     def __init__(self):
         self.buffer = ""
         self.current_tool_call = None
+        self.seen_message_ids = set()  # Track processed messages to avoid duplicates
 
     def parse_chunk(self, chunk: bytes) -> List[str]:
         """Parse a chunk of SSE data and return complete events."""
@@ -176,10 +177,22 @@ class SSEParser:
 
     def _process_message(self, message: Dict[str, Any]) -> str:
         """Process a message from the stream."""
-        if message["type"] == "AIMessageChunk":
-            return self._process_ai_message_chunk(message)
-        elif message["type"] == "tool":
+        message_type = message.get("type")
+
+        # Only deduplicate tool messages, not AI message chunks
+        if message_type == "tool":
+            message_id = message.get("id")
+            if message_id and message_id in self.seen_message_ids:
+                return ""  # Skip duplicate tool messages
+
+            # Mark this tool message as seen
+            if message_id:
+                self.seen_message_ids.add(message_id)
+
             return self._process_tool_message(message)
+
+        elif message_type == "AIMessageChunk":
+            return self._process_ai_message_chunk(message)
 
         return ""
 
@@ -198,7 +211,7 @@ class SSEParser:
                     "id": tool_call["id"],
                     "args": '{"'  # Initialize with opening brace and quote for JSON
                 }
-                result = f"\n\n🔧 **Tool Call: {tool_call['name']}**\n\n"
+                result = f"\n🔧 **Tool Call: {tool_call['name']}**\n\n"
 
                 # If args are complete in this chunk
                 if tool_call.get("args"):
@@ -231,14 +244,15 @@ class SSEParser:
     def _process_tool_message(self, message: Dict[str, Any]) -> str:
         """Process a tool response message."""
         tool_name = message.get("name", "Unknown")
-        tool_response = message.get("content", "No response") # optionally can include tool output
+        # tool_response = message.get("content", "No response") # optionally can include tool output
 
         return f"✅ **Tool Response: {tool_name}**\n\n"
 
 
-async def run_stream_from_message(thread_id: UUID, assistant_id: str,  message: str, configurable: dict):
+async def run_stream_from_message(thread_id: UUID, assistant_id: str,  message: str, configurable: dict, parser: Optional[SSEParser] = None):
     """Stream messages from the langgraph API"""
-    parser = SSEParser()
+    if parser is None:
+        parser = SSEParser()
 
     try:
         with httpx.stream(

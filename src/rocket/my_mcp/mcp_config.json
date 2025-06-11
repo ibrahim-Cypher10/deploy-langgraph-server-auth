@@ -14,7 +14,11 @@
       "args": [
         "src/rocket/my_mcp/youtube/server.py"
       ],
-      "transport": "stdio"
+      "transport": "stdio",
+      "env": {
+        "YOUTUBE_DATA_API_KEY": "${YOUTUBE_DATA_API_KEY}",
+        "SUPABASE_URI": "${SUPABASE_URI}"
+      }
     }
   }
 }

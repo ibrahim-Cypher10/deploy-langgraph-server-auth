@@ -1,14 +1,5 @@
 {
   "mcpServers": {
-    "db": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-postgres",
-        "${SUPABASE_URI}"
-      ],
-      "transport": "stdio"
-    },
     "youtube": {
       "command": "python",
       "args": [

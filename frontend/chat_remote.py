@@ -1,4 +1,4 @@
-from api.agent_server import create_thread, search_threads, delete_thread, run_stream_from_message
+from api.agent_server import create_thread, search_threads, delete_thread, run_stream_from_message, SSEParser
 from uuid import UUID
 from colorama import Fore, Style
 import nest_asyncio
@@ -18,6 +18,9 @@ async def main():
             "thread_id": str(thread_id)
         }
 
+        # Create a persistent parser to track seen messages across the conversation
+        parser = SSEParser()
+
         user_input = "Briefly introduce yourself and offer to help me."
         while True:
             print(f"\n ---- 🚀 Rocket ---- \n")
@@ -25,7 +28,8 @@ async def main():
                 thread_id=thread_id,
                 assistant_id="rocket",
                 message=user_input,
-                configurable=configurable
+                configurable=configurable,
+                parser=parser
                 ):
                 print(Fore.CYAN + result + Style.RESET_ALL, end="", flush=True)
 

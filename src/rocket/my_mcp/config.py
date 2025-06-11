@@ -97,9 +97,11 @@ def load_mcp_config() -> dict:
     # Load environment variables
     load_dotenv()
 
-    config_file = Path(__file__).parent / "mcp_config.json"
+    # Allow selecting different config files via environment variable
+    config_filename = os.getenv("MCP_CONFIG_FILE", "mcp_config.json")
+    config_file = Path(__file__).parent / config_filename
     if not config_file.exists():
-        raise FileNotFoundError(f"mcp_config.json file {config_file} does not exist")
+        raise FileNotFoundError(f"MCP config file {config_file} does not exist")
 
     with open(config_file, "r") as f:
         config = json.load(f)
