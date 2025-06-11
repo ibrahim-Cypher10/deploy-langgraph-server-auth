@@ -35,6 +35,7 @@ async def main():
                 break
             print(f"\n\n ----- 🥷 Human ----- \n\n{user_input}\n")
 
+        # Clean up
         await delete_thread(thread_id)
         print(f"\nDeleted thread: {thread_id}")
     except Exception as e:
