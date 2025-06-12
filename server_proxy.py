@@ -169,10 +169,19 @@ def create_proxy_app() -> Starlette:
     # Create the base app
     app = Starlette()
     
-    # Add CORS middleware
+    # Add middleware in reverse order (last added runs first)
+    # Order: Request → CORS → Auth → Proxy → LangGraph Server
+
+    # 1. Add proxy middleware first (runs last - forwards to LangGraph)
+    app.add_middleware(LangGraphProxyMiddleware, langgraph_url=LANGGRAPH_URL)
+
+    # 2. Add authentication middleware second (runs second - validates API keys)
+    app.add_middleware(APIKeyAuthMiddleware)
+
+    # 3. Add CORS middleware last (runs first - handles preflight requests)
     cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
     cors_origins = [origin.strip() for origin in cors_origins if origin.strip()]
-    
+
     if cors_origins:
         logger.info(f"CORS allowed origins: {cors_origins}")
         app.add_middleware(
@@ -184,12 +193,6 @@ def create_proxy_app() -> Starlette:
         )
     else:
         logger.info("CORS allowed origins: []")
-    
-    # Add proxy middleware first (this forwards requests to LangGraph server)
-    app.add_middleware(LangGraphProxyMiddleware, langgraph_url=LANGGRAPH_URL)
-
-    # Add authentication middleware last (so it runs first)
-    app.add_middleware(APIKeyAuthMiddleware)
     
     logger.info("Proxy application created successfully")
     return app
