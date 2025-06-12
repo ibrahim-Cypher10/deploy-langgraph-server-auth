@@ -20,10 +20,6 @@ class AgentState(BaseModel):
     messages: Annotated[List, add_messages] = []
 
 
-# Global cache for the compiled graph
-graph: Optional[CompiledStateGraph] = None
-
-
 async def build_graph() -> CompiledStateGraph:
     """Build and cache the graph to avoid rebuilding on every request."""
     global graph
