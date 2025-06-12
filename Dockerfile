@@ -7,12 +7,9 @@ RUN apk add --no-cache nodejs npm
 ADD . /deps/deploy-langgraph-server-auth
 # -- End of local package . --
 
-# -- Create auth middleware directory and copy files --
-RUN mkdir -p /api/middleware
-COPY auth_middleware.py /api/middleware/
+# -- Copy proxy server files --
 COPY server_proxy.py /api/
-RUN touch /api/__init__.py /api/middleware/__init__.py
-# -- End of auth middleware setup --
+# -- End of proxy server setup --
 
 # -- Installing all local dependencies --
 RUN PYTHONDONTWRITEBYTECODE=1 uv pip install --system --no-cache-dir -c /api/constraints.txt -e /deps/*

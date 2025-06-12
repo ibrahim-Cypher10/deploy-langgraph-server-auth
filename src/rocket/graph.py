@@ -21,14 +21,7 @@ class AgentState(BaseModel):
 
 
 async def build_graph() -> CompiledStateGraph:
-    """Build and cache the graph to avoid rebuilding on every request."""
-    global graph
-
-    # Return cached graph if available
-    if graph is not None:
-        return graph
-
-    print("Building graph for the first time...")
+    """Build the graph for the Rocket agent."""
 
     builder = StateGraph(AgentState)
 
