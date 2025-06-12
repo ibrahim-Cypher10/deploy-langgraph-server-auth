@@ -76,12 +76,12 @@ class LangGraphServerManager:
             logger.error(f"Failed to start LangGraph server: {e}")
             return False
     
-    async def wait_for_ready(self, max_wait: int = 60) -> bool:
+    async def wait_for_ready(self, max_wait: int = 90) -> bool:
         """
         Wait for the LangGraph server to be ready to accept requests.
         
         Args:
-            max_wait: Maximum time to wait in seconds
+            max_wait: Maximum time to wait in seconds (default: 90)
             
         Returns:
             bool: True if server is ready, False if timeout
@@ -154,33 +154,3 @@ class LangGraphServerManager:
             "status": "running" if self.process.returncode is None else "stopped",
             "return_code": self.process.returncode
         }
-
-
-async def start_langgraph_server(config: ServerConfig) -> Optional[asyncio.subprocess.Process]:
-    """
-    Legacy function for backward compatibility.
-    
-    Args:
-        config: Server configuration
-        
-    Returns:
-        Optional[asyncio.subprocess.Process]: The started process or None
-    """
-    manager = LangGraphServerManager(config)
-    success = await manager.start_server()
-    return manager.process if success else None
-
-
-async def wait_for_langgraph_server(config: ServerConfig, max_wait: int = 60) -> bool:
-    """
-    Legacy function for backward compatibility.
-    
-    Args:
-        config: Server configuration
-        max_wait: Maximum time to wait in seconds
-        
-    Returns:
-        bool: True if server is ready
-    """
-    manager = LangGraphServerManager(config)
-    return await manager.wait_for_ready(max_wait)
