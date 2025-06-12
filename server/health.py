@@ -12,7 +12,7 @@ import httpx
 from starlette.responses import Response, JSONResponse
 from starlette.requests import Request
 
-from config.environment import get_config
+from config import get_config
 
 logger = logging.getLogger(__name__)
 

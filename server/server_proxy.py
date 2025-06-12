@@ -20,7 +20,7 @@ import asyncio
 import uvicorn
 
 # Import centralized configuration
-from config.environment import init_config
+from config import init_config
 
 # Import server components
 from server import create_proxy_app, LangGraphServerManager
