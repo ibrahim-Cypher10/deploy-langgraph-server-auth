@@ -196,27 +196,43 @@ def create_proxy_app() -> Starlette:
 
 
 async def start_langgraph_server():
-    """Start the internal LangGraph server."""
+    """Start the internal LangGraph server using uvicorn."""
     logger.info(f"Starting internal LangGraph server on port {LANGGRAPH_PORT}...")
 
-    # Start LangGraph server as a subprocess
+    # Set up environment for LangGraph API server
     env = os.environ.copy()
-    # Set PORT environment variable for LangGraph server
     env["PORT"] = str(LANGGRAPH_PORT)
+    env["HOST"] = "127.0.0.1"  # Only bind to localhost for security
 
-    # Use both --port flag and PORT env var for maximum compatibility
-    # LangGraph server will bind to 127.0.0.1 (localhost only) for security
-    process = await asyncio.create_subprocess_exec(
-        "langgraph", "up",
-        "--port", str(LANGGRAPH_PORT),
-        "--host", "127.0.0.1",  # Only bind to localhost for security
-        env=env,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
+    # Use the correct command for LangGraph API server
+    cmd = ["uvicorn", "langgraph_api.server:app", "--host", "127.0.0.1", "--port", str(LANGGRAPH_PORT)]
 
-    logger.info(f"LangGraph server started with PID {process.pid} on port {LANGGRAPH_PORT}")
-    return process
+    try:
+        logger.info(f"Starting LangGraph server: {' '.join(cmd)}")
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            env=env,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+
+        # Give it a moment to start
+        await asyncio.sleep(2)
+
+        # Check if process is still running
+        if process.returncode is None:
+            logger.info(f"LangGraph server started successfully with PID {process.pid} on port {LANGGRAPH_PORT}")
+            return process
+        else:
+            logger.error(f"LangGraph server failed to start with return code {process.returncode}")
+            raise RuntimeError(f"LangGraph server process exited with code {process.returncode}")
+
+    except FileNotFoundError as e:
+        logger.error(f"uvicorn command not found: {e}")
+        raise RuntimeError("uvicorn not available in container")
+    except Exception as e:
+        logger.error(f"Failed to start LangGraph server: {e}")
+        raise
 
 
 async def wait_for_langgraph_server(max_wait: int = 60):
@@ -240,21 +256,30 @@ async def wait_for_langgraph_server(max_wait: int = 60):
 
 
 async def main():
-    """Main function to start both servers."""
+    """Main function to start the proxy server."""
     logger.info("Starting LangGraph Authentication Proxy...")
 
-    # Start the internal LangGraph server
+    # Check if LangGraph server is already running
+    logger.info("Checking if LangGraph server is already running...")
+    langgraph_ready = await wait_for_langgraph_server(max_wait=5)
+
     langgraph_process = None
-    try:
-        langgraph_process = await start_langgraph_server()
+    if not langgraph_ready:
+        logger.info("LangGraph server not detected, starting it...")
+        try:
+            langgraph_process = await start_langgraph_server()
 
-        # Wait for LangGraph server to be ready
-        langgraph_ready = await wait_for_langgraph_server()
-        if not langgraph_ready:
-            logger.warning("LangGraph server not ready, but starting proxy anyway for testing")
+            # Wait for LangGraph server to be ready
+            langgraph_ready = await wait_for_langgraph_server()
+            if not langgraph_ready:
+                logger.error("LangGraph server failed to start properly")
+                return
 
-    except Exception as e:
-        logger.warning(f"Failed to start LangGraph server: {e}, but starting proxy anyway for testing")
+        except Exception as e:
+            logger.error(f"Failed to start LangGraph server: {e}")
+            return
+    else:
+        logger.info("LangGraph server is already running!")
 
     try:
         # Create and start the proxy server
@@ -271,7 +296,7 @@ async def main():
         await server.serve()
 
     finally:
-        # Clean up LangGraph server
+        # Clean up LangGraph server if we started it
         if langgraph_process:
             logger.info("Shutting down LangGraph server...")
             try:
