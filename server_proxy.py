@@ -264,7 +264,7 @@ async def main():
 
     # Check if LangGraph server is already running
     logger.info("Checking if LangGraph server is already running...")
-    langgraph_ready = await wait_for_langgraph_server(max_wait=5)
+    langgraph_ready = await wait_for_langgraph_server(max_wait=30)
 
     langgraph_process = None
     if not langgraph_ready:
