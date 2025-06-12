@@ -17,6 +17,13 @@ LANGGRAPH_SERVER_URL = os.getenv("LANGGRAPH_SERVER_URL", "http://localhost:8000"
 if not LANGGRAPH_SERVER_URL:
     raise ValueError("LANGGRAPH_SERVER_URL environment variable not found. Please set it in your .env file or environment.")
 
+ROCKET_API_KEY = os.getenv('ROCKET_API_KEY', "")
+if ROCKET_API_KEY:
+    headers = {"x-api-key": ROCKET_API_KEY}
+else:
+    headers = {}
+
+
 
 # ----------------------------
 # Thread Management
@@ -29,6 +36,7 @@ async def create_thread(user_id: UUID) -> UUID:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url=f"{LANGGRAPH_SERVER_URL}/threads",
+                headers=headers,
                 json={
                     "thread_id": str(uuid.uuid4()),
                     "metadata": {
@@ -53,6 +61,7 @@ async def search_threads(user_id: UUID) -> List[UUID]:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url=f"{LANGGRAPH_SERVER_URL}/threads/search",
+                headers=headers,
                 json={
                     "metadata": {
                         "user_id": str(user_id)
@@ -74,6 +83,7 @@ async def delete_thread(thread_id: UUID) -> None:
         async with httpx.AsyncClient() as client:
             response = await client.delete(
                 url=f"{LANGGRAPH_SERVER_URL}/threads/{thread_id}",
+                headers=headers,
                 timeout=120.0 # Added timeout to wait for Render spin up
             )
             response.raise_for_status()
@@ -257,6 +267,7 @@ async def run_stream_from_message(thread_id: UUID, assistant_id: str,  message: 
     try:
         with httpx.stream(
             method="POST",
+            headers=headers,
             url=f"{LANGGRAPH_SERVER_URL}/threads/{str(thread_id)}/runs/stream",
             json={
                 "assistant_id": assistant_id,
