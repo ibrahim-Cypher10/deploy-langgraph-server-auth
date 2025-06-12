@@ -7,8 +7,7 @@ RUN apk add --no-cache nodejs npm
 ADD . /deps/deploy-langgraph-server-auth
 # -- End of local package . --
 
-# -- Copy server infrastructure and configuration --
-COPY config.py /api/
+# -- Copy server infrastructure (includes configuration) --
 COPY server/ /api/server/
 COPY scripts/ /api/scripts/
 # -- End of server setup --

@@ -8,7 +8,7 @@ all middleware components into a complete server application.
 import logging
 from starlette.applications import Starlette
 
-from config import ServerConfig
+from server.config import ServerConfig
 from server.middleware.auth import APIKeyAuthMiddleware
 from server.middleware.cors import add_cors_middleware
 from server.proxy import LangGraphProxyMiddleware

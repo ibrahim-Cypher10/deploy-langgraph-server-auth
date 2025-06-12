@@ -11,7 +11,7 @@ from typing import List
 from starlette.applications import Starlette
 from starlette.middleware.cors import CORSMiddleware
 
-from config import ServerConfig
+from server.config import ServerConfig
 
 logger = logging.getLogger(__name__)
 

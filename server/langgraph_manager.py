@@ -12,7 +12,7 @@ from typing import Optional
 
 import httpx
 
-from config import ServerConfig
+from server.config import ServerConfig
 
 logger = logging.getLogger(__name__)
 
