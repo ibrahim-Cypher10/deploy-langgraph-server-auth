@@ -5,7 +5,7 @@ from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
-from typing import Annotated, List, Optional
+from typing import Annotated, List
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from rocket.my_mcp.config import mcp_config
 from dotenv import load_dotenv
