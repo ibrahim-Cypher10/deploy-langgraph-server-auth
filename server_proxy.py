@@ -28,7 +28,12 @@ from starlette.responses import Response, JSONResponse
 from starlette.requests import Request
 
 # Import our auth middleware
-from auth_middleware import APIKeyAuthMiddleware
+try:
+    # Try importing from the container location first
+    from middleware.auth_middleware import APIKeyAuthMiddleware
+except ImportError:
+    # Fall back to local development location
+    from auth_middleware import APIKeyAuthMiddleware
 
 # Configure logging
 logging.basicConfig(

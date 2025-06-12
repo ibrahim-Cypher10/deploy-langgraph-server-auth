@@ -16,6 +16,10 @@ dependencies = [
     "pydantic>=2.11.5",
     "python-dotenv>=1.1.0",
     "sqlalchemy>=2.0.41",
+    # Proxy server dependencies
+    "httpx>=0.25.0",
+    "uvicorn>=0.24.0",
+    "starlette>=0.28.0",
 ]
 
 [dependency-groups]

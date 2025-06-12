@@ -10,7 +10,7 @@ ADD . /deps/deploy-langgraph-server-auth
 # -- Create auth middleware directory and copy files --
 RUN mkdir -p /api/middleware
 COPY auth_middleware.py /api/middleware/
-COPY server_production.py /api/
+COPY server_proxy.py /api/
 RUN touch /api/__init__.py /api/middleware/__init__.py
 # -- End of auth middleware setup --
 
