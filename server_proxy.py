@@ -13,10 +13,8 @@ Architecture:
 """
 
 import os
-import sys
 import logging
 import asyncio
-import subprocess
 from typing import Optional
 
 import httpx
@@ -27,9 +25,18 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response, JSONResponse, StreamingResponse
 from starlette.requests import Request
 
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
 # API Key Authentication Middleware (embedded)
 class APIKeyAuthMiddleware(BaseHTTPMiddleware):
-    """Custom middleware for API key authentication."""
+    """Custom middleware for API key authentication. Authentication is required if an API key is set in the environment."""
 
     def __init__(self, app, api_key: Optional[str] = None) -> None:
         super().__init__(app)
@@ -99,12 +106,6 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         logger.debug(f"Authentication successful for {request.method} {request.url.path}")
         return await call_next(request)
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 # Configuration
 PROXY_PORT = int(os.getenv("PORT", 8000))

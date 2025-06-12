@@ -25,16 +25,6 @@ def generate_api_key(
         
     Returns:
         str: A secure API key
-        
-    Examples:
-        >>> generate_api_key()
-        'Xk7mP9vQ2wR8sT1uY6nE4oI3pL5aZ9cF2dG8hJ0kM7vB'
-        
-        >>> generate_api_key(length=16, prefix="luna_")
-        'luna_Xk7mP9vQ2wR8sT1u'
-        
-        >>> generate_api_key(length=24, use_base64=False)
-        'a1b2c3d4e5f6789012345678901234567890abcd'
     """
     # Generate cryptographically secure random bytes
     random_bytes = secrets.token_bytes(length)
@@ -54,7 +44,6 @@ def generate_api_key(
 
 
 if __name__ == "__main__":
-    # Generate a standard key
     print("\nGenerating a standard API key for Rocket...")
     key = generate_api_key(prefix="rocket_")
     print(f"\n🔑 API key: \n\n{key}\n")
