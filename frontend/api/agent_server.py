@@ -13,7 +13,7 @@ import traceback
 load_dotenv()
 
 
-LANGGRAPH_SERVER_URL = os.getenv("LANGGRAPH_SERVER_URL", "http://localhost:8123")
+LANGGRAPH_SERVER_URL = os.getenv("LANGGRAPH_SERVER_URL", "http://localhost:8000")
 if not LANGGRAPH_SERVER_URL:
     raise ValueError("LANGGRAPH_SERVER_URL environment variable not found. Please set it in your .env file or environment.")
 
