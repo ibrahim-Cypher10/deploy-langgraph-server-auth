@@ -28,4 +28,4 @@ create table public.comments (
 
 alter table public.comments enable row level security;
 
-# add RLS policies
+/* add RLS policies */
