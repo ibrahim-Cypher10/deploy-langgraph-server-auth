@@ -27,13 +27,77 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response, JSONResponse
 from starlette.requests import Request
 
-# Import our auth middleware
-try:
-    # Try importing from the container location first
-    from middleware.auth_middleware import APIKeyAuthMiddleware
-except ImportError:
-    # Fall back to local development location
-    from auth_middleware import APIKeyAuthMiddleware
+# API Key Authentication Middleware (embedded)
+class APIKeyAuthMiddleware(BaseHTTPMiddleware):
+    """Custom middleware for API key authentication."""
+
+    def __init__(self, app, api_key: Optional[str] = None) -> None:
+        super().__init__(app)
+        # Get API key from parameter or environment variable
+        self.api_key = api_key or os.getenv("ROCKET_API_KEY", "")
+        self.api_key_required = bool(self.api_key.strip())
+        logger.info(f"API Key Authentication middleware initialized. Required: {self.api_key_required}")
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        """Process each HTTP request for authentication."""
+
+        # Skip authentication if not required
+        if not self.api_key_required:
+            logger.debug("API key not required, skipping authentication")
+            return await call_next(request)
+
+        # Skip authentication for OPTIONS requests (preflight)
+        if request.method == "OPTIONS":
+            logger.debug("OPTIONS request, skipping authentication")
+            return await call_next(request)
+
+        # Handle root path with a simple health check response
+        if request.url.path == "/":
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "status": "healthy",
+                    "service": "LangGraph Server with Auth",
+                    "message": "Server is running"
+                }
+            )
+
+        # Handle favicon requests
+        if request.url.path == "/favicon.ico":
+            return Response(status_code=204)
+
+        # Skip authentication for internal LangGraph endpoints and health checks
+        internal_paths = [
+            "/ok", "/health", "/metrics", "/docs", "/openapi.json",
+            "/health-detailed",
+            "/__health__", "/ready", "/startup", "/shutdown"
+        ]
+
+        internal_prefixes = [
+            "/_internal/",
+            "/api/v1/health",
+        ]
+
+        if (request.url.path in internal_paths or
+            any(request.url.path.startswith(prefix) for prefix in internal_prefixes)):
+            logger.debug(f"Internal path {request.url.path}, skipping authentication")
+            return await call_next(request)
+
+        # Get API key from header or query parameter
+        request_api_key = request.headers.get("x-api-key")
+        if not request_api_key:
+            request_api_key = request.query_params.get("api-key")
+
+        # Validate API key
+        if not request_api_key or request_api_key != self.api_key:
+            logger.warning(f"Authentication failed for {request.method} {request.url.path}")
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Invalid or missing API key"}
+            )
+
+        logger.debug(f"Authentication successful for {request.method} {request.url.path}")
+        return await call_next(request)
 
 # Configure logging
 logging.basicConfig(
