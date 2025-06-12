@@ -24,7 +24,7 @@ import uvicorn
 from starlette.applications import Starlette
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import Response, JSONResponse
+from starlette.responses import Response, JSONResponse, StreamingResponse
 from starlette.requests import Request
 
 # API Key Authentication Middleware (embedded)
@@ -141,32 +141,75 @@ class LangGraphProxyMiddleware(BaseHTTPMiddleware):
             target_url = f"{self.langgraph_url}{request.url.path}"
             if request.url.query:
                 target_url += f"?{request.url.query}"
-            
+
             # Get request body if present
             body = None
             if request.method in ["POST", "PUT", "PATCH"]:
                 body = await request.body()
-            
+
             # Forward headers (excluding host)
             headers = dict(request.headers)
             headers.pop("host", None)  # Remove host header to avoid conflicts
-            
-            # Make the request to LangGraph server
-            response = await self.client.request(
-                method=request.method,
-                url=target_url,
-                headers=headers,
-                content=body,
-                follow_redirects=True
+
+            # Check if this might be a streaming request
+            is_streaming = (
+                request.url.path.endswith("/stream") or
+                "/runs/stream" in request.url.path or
+                request.headers.get("accept") == "text/event-stream"
             )
-            
-            # Return the response from LangGraph server
-            return Response(
-                content=response.content,
-                status_code=response.status_code,
-                headers=dict(response.headers),
-                media_type=response.headers.get("content-type")
-            )
+
+            if is_streaming:
+                logger.info(f"Detected streaming request: {request.method} {request.url.path}")
+
+            if is_streaming:
+                # Handle streaming requests
+                logger.debug(f"Handling streaming request to {target_url}")
+
+                # Start the streaming request
+                stream_request = self.client.stream(
+                    method=request.method,
+                    url=target_url,
+                    headers=headers,
+                    content=body,
+                    follow_redirects=True
+                )
+
+                response = await stream_request.__aenter__()
+
+                # Prepare response headers
+                response_headers = dict(response.headers)
+                response_headers.pop("content-length", None)  # Remove content-length for streaming
+
+                async def stream_generator():
+                    try:
+                        async for chunk in response.aiter_bytes():
+                            if chunk:  # Only yield non-empty chunks
+                                yield chunk
+                    finally:
+                        await stream_request.__aexit__(None, None, None)
+
+                return StreamingResponse(
+                    stream_generator(),
+                    status_code=response.status_code,
+                    headers=response_headers,
+                    media_type=response.headers.get("content-type", "text/event-stream")
+                )
+            else:
+                # Handle non-streaming requests normally
+                response = await self.client.request(
+                    method=request.method,
+                    url=target_url,
+                    headers=headers,
+                    content=body,
+                    follow_redirects=True
+                )
+
+                return Response(
+                    content=response.content,
+                    status_code=response.status_code,
+                    headers=dict(response.headers),
+                    media_type=response.headers.get("content-type")
+                )
             
         except httpx.ConnectError:
             logger.error(f"Failed to connect to LangGraph server at {self.langgraph_url}")
