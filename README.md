@@ -83,7 +83,7 @@ The server will be available at `http://localhost:8000`.
 
 The project implements API key authentication using a custom middleware. Clients need to include the API key in their requests using either:
 
-- Header: `X-API-Key: your_api_key`
+- Header: `x-api-key: your_api_key`
 - Query parameter: `?api_key=your_api_key`
 
 ## 📝 API Usage
@@ -107,30 +107,23 @@ response = await client.invoke({"input": "Hello!"})
 
 ### Local Development
 
-1. Create a virtual environment:
-
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-2. Install UV (if not already installed):
+1. Install UV (if not already installed):
 
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-3. Install dependencies:
+2. Install dependencies:
 
    ```bash
    uv sync
    uv pip install -e .
    ```
 
-4. Run the local development server:
+3. Run the local development server:
 
    ```bash
-   python -m server.server_proxy
+   docker compose up --build
    ```
 
 ### Running Tests
