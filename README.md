@@ -88,19 +88,21 @@ The project implements API key authentication using a custom middleware. Clients
 
 ## 📝 API Usage
 
-Example of using the authenticated API:
+Example of calling the API from Python:
 
 ```python
-from frontend.api.agent_server_auth import AuthenticatedAgentAPI
-
-# Initialize the client with your API key
-client = AuthenticatedAgentAPI(
-    base_url="http://localhost:8000",
-    api_key="your_api_key"
-)
-
-# Make an authenticated request
-response = await client.invoke({"input": "Hello!"})
+async with httpx.AsyncClient() as client:
+   response = await client.post(
+         url=f"{LANGGRAPH_SERVER_URL}/threads/search",
+         headers={
+            "x-api-key": "your_api_key"
+         },
+         json={
+            "metadata": {
+               "user_id": str(user_id)
+            },
+         },
+   )
 ```
 
 ## 🛠️ Development
