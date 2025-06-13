@@ -1,24 +1,29 @@
 FROM langchain/langgraph-api:3.13-wolfi
 
+# <MODIFIED>
 # Install Node.js and npm for MCP postgres server
 RUN apk add --no-cache nodejs npm
+# </MODIFIED>
 
 # -- Adding local package . --
 ADD . /deps/deploy-langgraph-server-auth
 # -- End of local package . --
 
+# <MODIFIED>
 # -- Copy server infrastructure (includes configuration) --
 COPY server/ /api/server/
 COPY scripts/ /api/scripts/
 # -- End of server setup --
+# </MODIFIED>
 
 # -- Installing all local dependencies --
 RUN PYTHONDONTWRITEBYTECODE=1 uv pip install --system --no-cache-dir -c /api/constraints.txt -e /deps/*
 # -- End of local dependencies install --
 ENV LANGSERVE_GRAPHS='{"rocket": "/deps/deploy-langgraph-server-auth/src/rocket/graph.py:graph"}'
+
+# <MODIFIED>
 ENV PYTHONPATH="/deps/deploy-langgraph-server-auth:/api"
-
-
+# </MODIFIED>
 
 # -- Ensure user deps didn't inadvertently overwrite langgraph-api
 RUN mkdir -p /api/langgraph_api /api/langgraph_runtime /api/langgraph_license &&     touch /api/langgraph_api/__init__.py /api/langgraph_runtime/__init__.py /api/langgraph_license/__init__.py
@@ -33,5 +38,7 @@ RUN uv pip uninstall --system pip setuptools wheel && rm /usr/bin/uv /usr/bin/uv
 
 WORKDIR /deps/deploy-langgraph-server-auth
 
+# <MODIFIED>
 # -- Use the modular proxy server that adds auth without modifying LangGraph --
 ENTRYPOINT ["python", "/api/server/server_proxy.py"]
+# </MODIFIED>
