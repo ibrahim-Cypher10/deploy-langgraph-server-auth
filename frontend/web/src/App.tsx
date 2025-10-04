@@ -105,33 +105,49 @@ function StreamTester({ client, assistantId, threadId, onThreadIdChange }: Strea
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-slate-800 bg-slate-900/70 p-4 shadow">
-        <header className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">Stream playground</h2>
+      <section className="rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900/80 to-slate-900/60 p-6 shadow-lg">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+            <span className="text-purple-400 font-bold text-sm">3</span>
+          </div>
+          <h2 className="text-xl font-semibold text-slate-100">Stream Playground</h2>
+        </div>
+        
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg bg-slate-800/50">
+          <div className="space-y-1">
             <p className="text-sm text-slate-400">
-              Assistant <span className="font-mono text-slate-200">{assistantId}</span> · Thread
-              <span className="font-mono text-slate-200"> {threadId ?? "(auto)"}</span>
+              Assistant: <span className="font-mono text-slate-200">{assistantId}</span>
+            </p>
+            <p className="text-sm text-slate-400">
+              Thread: <span className="font-mono text-slate-200">{threadId ?? "(auto)"}</span>
             </p>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-300">
+          <div className="flex items-center gap-3">
             {threadId && (
               <button
                 type="button"
                 onClick={handleResetThread}
-                className="rounded border border-slate-700 bg-slate-800 px-3 py-1 font-medium text-slate-200 hover:bg-slate-700"
+                className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 font-medium text-slate-200 hover:bg-slate-700 transition-colors"
               >
                 New thread
               </button>
             )}
-            <span
-              className={clsx(
-                "rounded-full px-2 py-1 text-xs font-semibold",
-                stream.isLoading ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-700 text-slate-200",
-              )}
-            >
-              {stream.isLoading ? "Streaming" : "Idle"}
-            </span>
+            <div className="flex items-center gap-2">
+              <div
+                className={clsx(
+                  "w-2 h-2 rounded-full",
+                  stream.isLoading ? "bg-emerald-400 animate-pulse" : "bg-slate-500"
+                )}
+              />
+              <span
+                className={clsx(
+                  "rounded-full px-3 py-1 text-xs font-semibold",
+                  stream.isLoading ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-700 text-slate-200",
+                )}
+              >
+                {stream.isLoading ? "Streaming" : "Idle"}
+              </span>
+            </div>
           </div>
         </header>
 
@@ -166,14 +182,14 @@ function StreamTester({ client, assistantId, threadId, onThreadIdChange }: Strea
             <button
               type="submit"
               disabled={stream.isLoading}
-              className="rounded bg-emerald-500 px-4 py-2 font-semibold text-emerald-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-600/50"
+              className="rounded-lg bg-emerald-500 px-6 py-2 font-semibold text-emerald-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-600/50 shadow-md"
             >
               {stream.isLoading ? "Streaming…" : "Send"}
             </button>
             <button
               type="button"
               onClick={() => void stream.stop()}
-              className="rounded border border-slate-700 bg-slate-800 px-4 py-2 font-semibold text-slate-200 hover:bg-slate-700"
+              className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 font-semibold text-slate-200 hover:bg-slate-700 transition-colors"
             >
               Stop
             </button>
@@ -181,10 +197,15 @@ function StreamTester({ client, assistantId, threadId, onThreadIdChange }: Strea
         </form>
       </section>
 
-      <section className="space-y-3">
-        <header className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-slate-100">Streamed messages</h3>
-          <div className="text-xs text-slate-400">
+      <section className="rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900/80 to-slate-900/60 p-6 shadow-lg">
+        <header className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center">
+              <span className="text-orange-400 font-bold text-sm">4</span>
+            </div>
+            <h3 className="text-xl font-semibold text-slate-100">Streamed Messages</h3>
+          </div>
+          <div className="text-sm text-slate-400">
             {stream.error
               ? `Error: ${String(stream.error)}`
               : stream.messages.length
@@ -193,31 +214,52 @@ function StreamTester({ client, assistantId, threadId, onThreadIdChange }: Strea
           </div>
         </header>
 
-        <div className="space-y-2">
+        <div className="space-y-4">
           {stream.messages.map((message, index) => (
             <article
-              key={message.id ?? `${message.type}-${index}`}
+              key={`${message.id || `msg-${index}`}-${message.type}-${index}`}
               className={clsx(
-                "rounded-lg border border-slate-800 bg-slate-900/60 p-3 text-sm shadow",
+                "rounded-xl border p-4 text-sm shadow-lg transition-all duration-200",
                 message.type === "human"
-                  ? "border-emerald-600/40"
+                  ? "border-emerald-600/40 bg-emerald-500/5"
                   : message.type === "ai"
-                    ? "border-sky-500/40"
-                    : "border-slate-700",
+                    ? "border-sky-500/40 bg-sky-500/5"
+                    : "border-slate-700 bg-slate-800/50",
               )}
             >
-              <header className="mb-1 flex items-center justify-between text-xs uppercase tracking-wide text-slate-400">
-                <span>{message.type === "human" ? "You" : message.type === "ai" ? "Rocket" : message.type}</span>
-                <span className="font-mono text-[10px] text-slate-500">{message.id ?? `#${index}`}</span>
+              <header className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={clsx(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+                      message.type === "human"
+                        ? "bg-emerald-500/20 text-emerald-300"
+                        : message.type === "ai"
+                          ? "bg-sky-500/20 text-sky-300"
+                          : "bg-slate-500/20 text-slate-300",
+                    )}
+                  >
+                    {message.type === "human" ? "U" : message.type === "ai" ? "R" : message.type.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-semibold text-slate-200">
+                    {message.type === "human" ? "You" : message.type === "ai" ? "Rocket" : message.type}
+                  </span>
+                </div>
+                <span className="font-mono text-xs text-slate-500">{message.id ?? `#${index}`}</span>
               </header>
-              <p className="whitespace-pre-wrap text-slate-200">{renderMessageContent(message)}</p>
+              <div className="pl-8">
+                <p className="whitespace-pre-wrap text-slate-200 leading-relaxed">{renderMessageContent(message)}</p>
+              </div>
             </article>
           ))}
 
           {!stream.messages.length && (
-            <p className="rounded border border-dashed border-slate-700 bg-slate-900/40 p-4 text-center text-sm text-slate-400">
-              Send a prompt to see streaming updates.
-            </p>
+            <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 p-8 text-center">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-slate-800/50 flex items-center justify-center">
+                <span className="text-2xl">💬</span>
+              </div>
+              <p className="text-sm text-slate-400">Send a prompt to see streaming updates</p>
+            </div>
           )}
         </div>
       </section>
@@ -280,17 +322,22 @@ function App() {
   const showStreamTester = activeConfig.applied && selectedAssistantId;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-4 py-10">
-      <header className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold text-slate-100">LangGraph Proxy Stream Tester</h1>
-        <p className="text-sm text-slate-400">
-          Connect to your authenticated proxy and verify the <code className="rounded bg-slate-800 px-1">useStream</code> hook works end-to-end.
+    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-8">
+      <header className="space-y-3 text-center border-b border-slate-800 pb-6">
+        <h1 className="text-4xl font-bold text-slate-100">LangGraph Proxy Stream Tester</h1>
+        <p className="text-base text-slate-400 max-w-2xl mx-auto">
+          Connect to your authenticated proxy and verify the <code className="rounded bg-slate-800 px-2 py-1 text-emerald-300">useStream</code> hook works end-to-end.
         </p>
       </header>
 
-      <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-6 shadow">
-        <h2 className="text-lg font-semibold text-slate-100">1. Connect to the proxy</h2>
-        <p className="mb-4 text-sm text-slate-400">
+      <section className="rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900/80 to-slate-900/60 p-6 shadow-lg">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <span className="text-emerald-400 font-bold text-sm">1</span>
+          </div>
+          <h2 className="text-xl font-semibold text-slate-100">Connect to the proxy</h2>
+        </div>
+        <p className="mb-6 text-sm text-slate-400">
           Provide the base URL of your LangGraph proxy and (if required) an API key.
         </p>
 
@@ -324,22 +371,32 @@ function App() {
             />
           </label>
 
-          <div className="md:col-span-2 flex flex-wrap items-center gap-3">
+          <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3">
             <button
               type="submit"
-              className="rounded bg-emerald-500 px-4 py-2 font-semibold text-emerald-950 transition hover:bg-emerald-400"
+              className="rounded-lg bg-emerald-500 px-6 py-2 font-semibold text-emerald-950 transition hover:bg-emerald-400 shadow-md"
             >
               {activeConfig.applied ? "Reconnect" : "Connect"}
             </button>
-            {activeConfig.applied && <span className="text-xs text-emerald-300">Connected to {activeConfig.apiUrl}</span>}
+            {activeConfig.applied && (
+              <div className="flex items-center gap-2 text-sm">
+                <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                <span className="text-emerald-300 font-medium">Connected to {activeConfig.apiUrl}</span>
+              </div>
+            )}
           </div>
         </form>
       </section>
 
       {activeConfig.applied && (
-        <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-6 shadow">
-          <h2 className="text-lg font-semibold text-slate-100">2. Choose an assistant</h2>
-          <p className="mb-4 text-sm text-slate-400">
+        <section className="rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900/80 to-slate-900/60 p-6 shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <span className="text-blue-400 font-bold text-sm">2</span>
+            </div>
+            <h2 className="text-xl font-semibold text-slate-100">Choose an assistant</h2>
+          </div>
+          <p className="mb-6 text-sm text-slate-400">
             We will automatically list assistants from the LangGraph server behind your proxy. Pick one to start streaming.
           </p>
 
@@ -358,15 +415,15 @@ function App() {
               )}
             </div>
 
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {assistants.map((assistant) => (
                 <label
                   key={assistant.assistant_id}
                   className={clsx(
-                    "flex cursor-pointer flex-col rounded border p-3 transition",
+                    "flex cursor-pointer flex-col rounded-lg border p-4 transition-all duration-200 hover:shadow-md",
                     selectedAssistantId === assistant.assistant_id
-                      ? "border-emerald-500/60 bg-emerald-500/10"
-                      : "border-slate-800 bg-slate-900/70 hover:border-emerald-500/40",
+                      ? "border-emerald-500/60 bg-emerald-500/10 shadow-lg shadow-emerald-500/10"
+                      : "border-slate-800 bg-slate-900/70 hover:border-emerald-500/40 hover:bg-slate-900/80",
                   )}
                 >
                   <input
@@ -380,9 +437,15 @@ function App() {
                     }}
                     className="sr-only"
                   />
-                  <span className="text-sm font-semibold text-slate-100">{assistant.name ?? assistant.assistant_id}</span>
-                  <span className="text-xs text-slate-400">{assistant.assistant_id}</span>
-                  {assistant.description && <span className="mt-1 text-xs text-slate-400">{assistant.description}</span>}
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <span className="text-sm font-semibold text-slate-100">{assistant.name || "Unnamed Assistant"}</span>
+                      <span className="text-xs text-slate-400 font-mono">{assistant.assistant_id}</span>
+                    </div>
+                    {assistant.description && (
+                      <span className="text-xs text-slate-400 leading-relaxed">{assistant.description}</span>
+                    )}
+                  </div>
                 </label>
               ))}
             </div>

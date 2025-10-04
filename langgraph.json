@@ -1,7 +1,13 @@
 {
     "dependencies": ["."],
     "graphs": {
-      "rocket": "./src/rocket/graph.py:graph"
+      "rocket": {
+        "path": "./src/rocket/graph.py:graph",
+        "metadata": {
+          "name": "Rocket Assistant",
+          "description": "YouTube comment analysis assistant"
+        }
+      }
     },
     "env": ".env",
     "python_version": "3.13",
