@@ -33,7 +33,7 @@ This repository contains the code for a tutorial on how to deploy LangGraph agen
 
 - Python 3.11 or higher
 - Docker and Docker Compose
-- An OpenAI API key
+- A Groq API key
 - A YouTube Data API key
 
 ### YouTube API Setup
@@ -66,7 +66,7 @@ This repository contains the code for a tutorial on how to deploy LangGraph agen
 2. Create a .env file with your configuration:
 
    ```bash
-   OPENAI_API_KEY=your_openai_api_key
+   GROQ_API_KEY=your_groq_api_key
    API_KEY=your_custom_api_key  # For authentication
    YOUTUBE_API_KEY=your_youtube_api_key  # From Google Cloud Console
    ```

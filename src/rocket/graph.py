@@ -3,7 +3,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from pydantic import BaseModel
 from typing import Annotated, List
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -11,6 +11,7 @@ from rocket.my_mcp.config import mcp_config
 from dotenv import load_dotenv
 from rocket.prompts.prompts import rocket_system_prompt
 import asyncio
+import os
 
 
 load_dotenv()
@@ -26,11 +27,16 @@ async def build_graph() -> CompiledStateGraph:
     builder = StateGraph(AgentState)
 
     print("Initializing MCP client and getting tools...")
-    client = MultiServerMCPClient(connections=mcp_config["mcpServers"])
-    tools = await client.get_tools()
-    print(f"Successfully loaded {len(tools)} tools")
-
-    llm = ChatOpenAI(model="gpt-4.1-mini-2025-04-14", temperature=0.1).bind_tools(tools)
+    try:
+        client = MultiServerMCPClient(connections=mcp_config["mcpServers"])
+        tools = await client.get_tools()
+        print(f"Successfully loaded {len(tools)} tools")
+        llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.1, api_key=os.getenv("GROQ_API_KEY")).bind_tools(tools)
+    except Exception as e:
+        print(f"MCP initialization failed: {e}")
+        print("Falling back to basic LLM without tools...")
+        tools = []
+        llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.1, api_key=os.getenv("GROQ_API_KEY"))
 
     def assistant(state: AgentState) -> AgentState:
         response = llm.invoke(
@@ -41,7 +47,7 @@ async def build_graph() -> CompiledStateGraph:
         return state
 
     def assistant_router(state: AgentState) -> str:
-        if state.messages[-1].tool_calls:
+        if tools and state.messages[-1].tool_calls:
             return "tools"
         return END
 
