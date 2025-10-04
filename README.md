@@ -22,7 +22,8 @@ This repository contains the code for a tutorial on how to deploy LangGraph agen
 │   └── config.py          # Server configuration
 ├── frontend/               # Client examples
 │   ├── chat_local.py      # Local testing client
-│   └── chat_remote_auth.py # Remote client with auth
+│   ├── chat_remote.py     # Remote client with auth
+│   └── web/               # React stream tester for the LangGraph proxy
 └── src/                    # LangGraph agent implementation
     └── rocket/            # Example agent code
 ```
@@ -78,6 +79,23 @@ This repository contains the code for a tutorial on how to deploy LangGraph agen
    ```
 
 The server will be available at `http://localhost:8000`.
+
+### Frontend stream tester
+
+The repository now includes a lightweight React application that uses the LangGraph SDK's `useStream` hook to exercise the
+authenticated proxy from the browser. This is useful for verifying that Server-Sent Events flow correctly through the proxy layer.
+
+```bash
+cd frontend/web
+npm install
+npm run dev  # Visit the printed URL to open the tester UI
+```
+
+The tester lets you:
+
+- Configure the proxy URL and API key header used by the JS SDK client
+- Fetch assistants from the LangGraph instance behind the proxy
+- Stream responses for ad-hoc prompts while inspecting intermediate messages
 
 ## 🔒 Authentication
 

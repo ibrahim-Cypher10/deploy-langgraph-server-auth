@@ -18,3 +18,8 @@ uv.lock
 
 # langgraph api
 .langgraph_api
+
+# JavaScript/TypeScript
+node_modules/
+dist/
+*.tsbuildinfo
