@@ -6,6 +6,7 @@ services:
     container_name: rocket-server
     ports:
       - "8000:8000"  # Map container port 8000 to host port 8000
+      - "8123:8123"  # Map container port 8123 to host port 8123 (direct LangGraph)
     env_file:
       - .env  # Load environment variables from .env file
     environment:

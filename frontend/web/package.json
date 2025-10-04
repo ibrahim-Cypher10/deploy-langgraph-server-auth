@@ -11,9 +11,13 @@
   "dependencies": {
     "@langchain/core": "^0.3.78",
     "@langchain/langgraph-sdk": "^0.1.9",
+    "@tailwindcss/postcss": "^4.1.14",
+    "autoprefixer": "^10.4.21",
     "clsx": "^2.1.0",
+    "postcss": "^8.5.6",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^4.1.14"
   },
   "devDependencies": {
     "@types/node": "^24.6.2",
