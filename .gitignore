@@ -14,12 +14,10 @@ uv.lock
 *.DS_Store
 
 # env
+.env
 
 # langgraph api
 .langgraph_api
-
 # JavaScript/TypeScript
 node_modules/
-dist/
 *.tsbuildinfo
-config.bat
